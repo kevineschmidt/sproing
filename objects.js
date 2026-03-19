@@ -23,10 +23,10 @@ function createTallRect(x, y, cellSize, cells) {
          springs.push(new Spring(mass2, massA, 40000, diagonalSpringSize))          
     }
 
-    return {
+    return new Body(
         springs,
         masses
-    }
+    )
 }
 
 function buildCube() {
@@ -38,9 +38,9 @@ function buildCube() {
     let mass3 = new Mass(2, center[0] + dim[0] / 2, center[1] + dim[1]/2, "blue")
     let mass4 = new Mass(2, center[0] + dim[0] / 2, center[1] - dim[1]/2, "yellow")
 
-    return {
-        masses: [mass1, mass2, mass3, mass4],
-        springs: [
+    new Body(
+        [mass1, mass2, mass3, mass4],
+        [
             new Spring(mass1, mass2, 4000, dim[1]),
             new Spring(mass2, mass3, 4000, dim[0]),
             new Spring(mass3, mass4, 4000, dim[1]),
@@ -48,5 +48,6 @@ function buildCube() {
             new Spring(mass4, mass2, 4000, Math.sqrt(2*dim[0]*dim[1])),
             new Spring(mass1, mass3, 4000, Math.sqrt(2*dim[0]*dim[1]))
         ]
-    }
+    )
+    
 }

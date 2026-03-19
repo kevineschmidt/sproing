@@ -4,7 +4,7 @@ class Mass {
         this.velocity = new Vector()
         this.position = new Vector(x, y)
         this.mass = mass
-        this.radius = mass * 2
+        this.radius = mass
         this.restitution = .8
         this.color = color
     }
@@ -57,5 +57,12 @@ class Spring {
         ctx.moveTo(this.mass1.position.x, this.mass1.position.y)
         ctx.lineTo(this.mass2.position.x, this.mass2.position.y)
         ctx.stroke()
+    }
+}
+
+class Body {
+    constructor(springs = [], masses = []) {
+        this.springs = springs
+        this.masses = masses
     }
 }

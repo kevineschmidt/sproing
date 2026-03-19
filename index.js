@@ -1,25 +1,11 @@
 const canvas = document.querySelector('canvas')
-const context = canvas.getContext('2d')
+
+const button = document.querySelector('#start-stop-button')
 
 
-const BACKGROUND="black"
-const SPRING="orange"
+const world = new World(canvas)
 
-
-const anchor = [canvas.width / 2, 0]
-const block = [canvas.width / 2, canvas.height /2]
-const IDEAL_LENGTH = canvas.height / 3
-const SPRING_CONSTANT = 2
-const blockVel = [0, 0]
-
-const BLOCK_MASS=10
-
-
-let gravity = new Vector(0, 980)
-let lastTime = performance.now()
-const object = createTallRect(440, 10, 20, 5)
-
-const walls = [
+world.walls = [
     new Wall(0, 0, 0, canvas.height),
     new Wall(canvas.width, canvas.width, canvas.height, 0),
     new Wall(0, canvas.width, canvas.height, canvas.height),
@@ -28,33 +14,44 @@ const walls = [
     new Wall(300, 500, 430, 350)
 ]
 
-function draw() {
-    // const now = performance.now()
-    // const deltaT = (now - lastTime)/1000
-    // lastTime = now
-    const deltaT = .01
-    context.fillStyle = BACKGROUND
-    context.fillRect(0, 0, canvas.width, canvas.height)
-    
-    context.strokeStyle = SPRING
-    context.fillStyle = SPRING
-    walls.forEach(wall => wall.draw(context))
-    object.springs.forEach(spring => spring.draw(context))
-    object.masses.forEach(mass => mass.draw(context))
-    const UPDATES = 50
-    for (let i = 0 ; i < UPDATES; ++i) {
-        object.springs.forEach(spring => spring.applyForce())
-        object.masses.forEach(mass => mass.applyForce(gravity.scale(mass.mass)))
-        object.masses.forEach(mass => mass.update(deltaT / UPDATES))
-        walls.forEach((wall) => {
-            object.masses.forEach(mass => {
-                wall.intersect(mass)
-            })
-        })
+const newBody = new Body()
+let activeMass = null
+world.objects.push(newBody)
+
+const MASS_RADIUS=5
+const MASS_COLOR="red"
+const SELECTED_MASS_COLOR="blue"
+
+
+canvas.onclick = (event) => {
+    const center = new Vector(event.offsetX, event.offsetY)
+
+    const clickedMass = newBody.masses.find((mass) => {
+        return center.sub(mass.position).length() < MASS_RADIUS * 2
+    })
+    if (clickedMass && clickedMass !== activeMass) {
+        if (!activeMass) {
+            activeMass = clickedMass 
+            activeMass.color = SELECTED_MASS_COLOR
+        }
+        else {
+            const dist = activeMass.position.sub(clickedMass.position).length()
+            const spring = new Spring(activeMass, clickedMass, 4000, dist)
+            newBody.springs.push(spring)
+            activeMass.color = "red"
+            activeMass = null
+        }
+    } else {
+        if (activeMass) activeMass.color = MASS_COLOR
+        newBody.masses.push(new Mass(MASS_RADIUS, center.x, center.y, MASS_COLOR))
     }
 
-    requestAnimationFrame(draw);
+    world.draw()
 }
 
+button.onclick = () => {
+    if (world.animating) world.stop()
+    else world.animate()
+}
 
-draw()
+world.draw()
