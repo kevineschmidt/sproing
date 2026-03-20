@@ -228,12 +228,13 @@
     }
   };
 
-  // src/draw-bodies.ts
+  // src/draw-mode.ts
   var MASS_RADIUS = 5;
   var MASS_COLOR = "red";
   var newBody = new Body();
   var lastMass = null;
   var firstMass = null;
+  var lastPos = null;
   var undoStack = [];
   function massAtPoint(pos) {
     return newBody.masses.find((mass) => {
@@ -264,7 +265,11 @@
       });
     });
   }
-  function addBodyDrawing(world2, canvas2) {
+  var currentMode = null;
+  function setDrawMode(mode) {
+    currentMode = mode;
+  }
+  function addDrawMode(world2, canvas2) {
     world2.objects.push(newBody);
     document.onkeydown = (event) => {
       if (event.key === "z" && event.metaKey) {
@@ -278,31 +283,48 @@
     };
     canvas2.onmousedown = (event) => {
       const start = new vector_default(event.offsetX, event.offsetY);
-      lastMass = massAtPoint(start);
-      if (!lastMass) {
-        lastMass = addNewMass(start);
+      lastPos = start;
+      if (currentMode === "body") {
+        lastMass = massAtPoint(start);
+        if (!lastMass) {
+          lastMass = addNewMass(start);
+        }
+        firstMass = lastMass;
       }
-      firstMass = lastMass;
     };
-    canvas2.onmouseup = (event) => {
-      if (!firstMass || !lastMass) return;
-      const pos = new vector_default(event.offsetX, event.offsetY);
-      addNewSpring(firstMass, lastMass).perimeter = true;
-      firstMass = null;
-      lastMass = null;
-      joinAllMasses();
-      newBody = new Body();
-      world2.objects.push(newBody);
+    canvas2.onmouseup = () => {
+      if (currentMode === "body") {
+        if (!firstMass || !lastMass) return;
+        addNewSpring(firstMass, lastMass).perimeter = true;
+        firstMass = null;
+        lastMass = null;
+        joinAllMasses();
+        newBody = new Body();
+        world2.objects.push(newBody);
+        undoStack.push(() => {
+          world2.objects = world2.objects.filter((b) => b !== newBody);
+        });
+      }
+      lastPos = null;
       world2.draw();
     };
     canvas2.onmousemove = (event) => {
-      if (!lastMass) return;
+      if (!lastPos) return;
       const pos = new vector_default(event.offsetX, event.offsetY);
-      const thisDrag = pos.sub(lastMass.position).length() > 10;
-      if (thisDrag) {
-        const newMass = addNewMass(pos);
-        addNewSpring(lastMass, newMass).perimeter = true;
-        lastMass = newMass;
+      const thisDrag = pos.sub(lastPos).length() > 10;
+      if (!thisDrag) return;
+      if (currentMode === "body") {
+        if (!lastMass) return;
+        if (thisDrag) {
+          const newMass = addNewMass(pos);
+          lastPos = pos;
+          addNewSpring(lastMass, newMass).perimeter = true;
+          lastMass = newMass;
+          world2.draw();
+        }
+      } else if (currentMode === "wall") {
+        world2.walls.push(new Wall(lastPos.x, pos.x, lastPos.y, pos.y));
+        lastPos = pos;
         world2.draw();
       }
     };
@@ -312,6 +334,17 @@
   var canvas = document.querySelector("canvas");
   var button = document.querySelector("#start-stop-button");
   var world = new World(canvas);
+  addDrawMode(world, canvas);
+  document.querySelectorAll('input[type="radio"]').forEach((button2) => {
+    button2.onchange = (e) => {
+      const value = e.target instanceof HTMLInputElement ? e.target.value : null;
+      if (value === "wall") {
+        setDrawMode("wall");
+      } else if (value === "body") {
+        setDrawMode("body");
+      }
+    };
+  });
   world.walls = [
     new Wall(0, 0, 0, canvas.height),
     new Wall(canvas.width, canvas.width, canvas.height, 0),
@@ -320,7 +353,6 @@
     new Wall(canvas.width / 2, canvas.width, 200, 75),
     new Wall(300, 500, 430, 350)
   ];
-  addBodyDrawing(world, canvas);
   button.onclick = () => {
     if (world.animating) world.stop();
     else world.animate();

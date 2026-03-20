@@ -1,5 +1,6 @@
 import { Mass, Body, Spring } from './body'
 import type World from './world'
+import Wall from './wall'
 
 import Vector from './vector'
 
@@ -9,6 +10,7 @@ const MASS_COLOR="red"
 let newBody = new Body()
 let lastMass: Mass | null = null
 let firstMass: Mass | null = null
+let lastPos: Vector | null = null
 const undoStack: Array<() => void> = []
 
 
@@ -50,8 +52,13 @@ function joinAllMasses() {
     })    
 }
 
+let currentMode: 'body' | 'wall' | null = null
 
-export function addBodyDrawing(world: World, canvas: HTMLCanvasElement) {
+export function setDrawMode(mode: 'body' | 'wall' | null) {
+    currentMode = mode
+}
+
+export function addDrawMode(world: World, canvas: HTMLCanvasElement) {
 
     world.objects.push(newBody)
     document.onkeydown = (event) => {
@@ -70,39 +77,57 @@ export function addBodyDrawing(world: World, canvas: HTMLCanvasElement) {
 
     canvas.onmousedown = (event) => {
         const start = new Vector(event.offsetX, event.offsetY)
-        lastMass = massAtPoint(start)
-        if (!lastMass) {
-            lastMass = addNewMass(start)
+        lastPos = start
+        if (currentMode === 'body') {
+            lastMass = massAtPoint(start)
+            if (!lastMass) {
+                lastMass = addNewMass(start)
+            }
+            firstMass = lastMass
         }
-        firstMass = lastMass
     }
+    
+    canvas.onmouseup = () => {
+        if (currentMode === 'body') {
+            if (!firstMass || !lastMass) return
 
-    canvas.onmouseup = (event) => {
-        if (!firstMass || !lastMass) return
+            addNewSpring(firstMass, lastMass).perimeter = true
+            firstMass = null
+            lastMass = null
+            joinAllMasses()
 
-        const pos = new Vector(event.offsetX, event.offsetY)
-        addNewSpring(firstMass, lastMass).perimeter = true
-        firstMass = null
-        lastMass = null
-        joinAllMasses()
-
-        // Get the next one ready
-        newBody = new Body()
-        world.objects.push(newBody)
-        
+            // Get the next one ready
+            newBody = new Body()
+            world.objects.push(newBody)
+            undoStack.push(() => {
+                world.objects = world.objects.filter(b => b !== newBody)
+            })
+        }    
+        lastPos = null
         world.draw()
     }
 
     canvas.onmousemove = (event) => {
-        if (!lastMass) return
-
+        if (!lastPos) return
         const pos = new Vector(event.offsetX, event.offsetY)
-        const thisDrag =  (pos.sub(lastMass.position).length() > 10)
-        if (thisDrag) {
-            const newMass = addNewMass(pos)
-            addNewSpring(lastMass, newMass).perimeter = true
-            lastMass = newMass
+        const thisDrag =  (pos.sub(lastPos).length() > 10)
+        if (!thisDrag) return
+
+        if (currentMode === 'body') {
+            if (!lastMass) return
+
+            if (thisDrag) {
+                const newMass = addNewMass(pos)
+                lastPos = pos
+                addNewSpring(lastMass, newMass).perimeter = true
+                lastMass = newMass
+                world.draw()
+            }
+        } else if (currentMode === 'wall') {
+            world.walls.push(new Wall(lastPos.x, pos.x, lastPos.y, pos.y))
+            lastPos = pos
             world.draw()
         }
     }
+    
 }

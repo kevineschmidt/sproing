@@ -1,10 +1,24 @@
 import World from './world'
 import Wall from './wall'
-import { addBodyDrawing } from './draw-bodies'
+import { setDrawMode, addDrawMode } from './draw-mode'
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement
 const button = document.querySelector('#start-stop-button') as HTMLButtonElement
+
 const world = new World(canvas)
+addDrawMode(world, canvas)
+
+document.querySelectorAll('input[type="radio"]').forEach((button: Element) => {
+    (button as HTMLInputElement).onchange = (e: Event) => {
+
+        const value = e.target instanceof HTMLInputElement ? e.target.value : null
+        if (value === 'wall') {
+           setDrawMode('wall')
+        } else if (value === 'body') {
+            setDrawMode('body')
+        }
+    }
+})
 
 world.walls = [
     new Wall(0, 0, 0, canvas.height),
@@ -15,7 +29,7 @@ world.walls = [
     new Wall(300, 500, 430, 350)
 ]
 
-addBodyDrawing(world, canvas)
+
 
 button.onclick = () => {
     if (world.animating) world.stop()

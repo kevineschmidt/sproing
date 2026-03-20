@@ -4,7 +4,14 @@
 
         </canvas>
         <button id="start-stop-button">Start/Stop</button>
-     
+
+        <div class="radio-group">
+            <input type="radio" name="choice" id="choice-1" value="body" @change=>
+            <label for="choice-1">Draw Bodies</label>
+
+            <input type="radio" name="choice" id="choice-2" value="wall">
+            <label for="choice-2">Draw Walls</label>
+        </div>
         <script src="sproing.js"></script>
     </body>
 </html>
