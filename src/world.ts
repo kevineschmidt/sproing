@@ -1,21 +1,33 @@
-let lastTime = performance.now()
+import { Body } from './body'
+import Wall from './wall'
+import Vector from './vector'
+
+
 
 const BACKGROUND="black"
 const SPRING="orange"
 const gravity = new Vector(0, 980)
 
-class World {
-    constructor(canvas) {
+export default class World {
+    walls: Array<Wall>
+    objects: Array<Body>
+    animationRequest: number | null 
+    canvas: HTMLCanvasElement
+    context: CanvasRenderingContext2D
+    animating: boolean
+
+    constructor(canvas: HTMLCanvasElement) {
         this.walls = []
         this.objects = []
         this.animationRequest = null
         this.canvas = canvas;
-        this.context = canvas.getContext('2d')
+        this.context = canvas.getContext('2d') as CanvasRenderingContext2D
         this.animating = false;
     }
     
     stop() {        
-        window.cancelAnimationFrame(this.animationRequest)
+        if (this.animationRequest)
+            window.cancelAnimationFrame(this.animationRequest)
         this.animationRequest = null
         this.animating = false
         this.draw()
@@ -35,7 +47,7 @@ class World {
         })
     }
 
-    update(deltaT) {
+    update(deltaT: number) {
         this.objects.forEach((object) => {
             object.springs.forEach(spring => spring.applyForce())
             object.masses.forEach(mass => mass.applyForce(gravity.scale(mass.mass)))

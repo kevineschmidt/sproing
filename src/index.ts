@@ -1,8 +1,10 @@
-const canvas = document.querySelector('canvas')
+import World from './world'
+import Wall from './wall'
+import { Body, Mass, Spring} from './body'
+import Vector from './vector'
 
-const button = document.querySelector('#start-stop-button')
-
-
+const canvas = document.querySelector('canvas') as HTMLCanvasElement
+const button = document.querySelector('#start-stop-button') as HTMLButtonElement
 const world = new World(canvas)
 
 world.walls = [
@@ -15,13 +17,12 @@ world.walls = [
 ]
 
 const newBody = new Body()
-let activeMass = null
+let activeMass: Mass | null = null
 world.objects.push(newBody)
 
 const MASS_RADIUS=5
 const MASS_COLOR="red"
 const SELECTED_MASS_COLOR="blue"
-
 
 canvas.onclick = (event) => {
     const center = new Vector(event.offsetX, event.offsetY)

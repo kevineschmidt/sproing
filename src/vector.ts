@@ -1,4 +1,7 @@
 class Vector {
+    x: number
+    y: number
+    
     constructor(x = 0, y = 0) {
         this.x = x
         this.y = y
@@ -8,19 +11,19 @@ class Vector {
         return Math.sqrt(this.dot(this))
     }
 
-    sub(v) {
+    sub(v: Vector) {
         return new Vector(this.x - v.x, this.y - v.y)
     }
 
-    add(v) {
+    add(v: Vector) {
         return new Vector(this.x + v.x, this.y + v.y)
     }
 
-    dot(v) {
+    dot(v: Vector) {
         return this.x * v.x + this.y * v.y
     }
     
-    scale(factor) {
+    scale(factor: number) {
         return new Vector(this.x * factor, this.y * factor)
     }
 
@@ -28,3 +31,5 @@ class Vector {
         return this.scale(1.0/this.length())
     }
 }
+
+export default Vector

@@ -1,5 +1,15 @@
+import Vector from './vector'
+
 class Mass {
-    constructor(mass, x, y, color) {
+    force: Vector
+    velocity: Vector
+    position: Vector
+    mass: number
+    restitution: number
+    radius: number
+    color: string
+
+    constructor(mass: number, x: number, y: number, color: string) {
         this.force = new Vector()
         this.velocity = new Vector()
         this.position = new Vector(x, y)
@@ -9,17 +19,17 @@ class Mass {
         this.color = color
     }
 
-    applyForce(f) {
+    applyForce(f: Vector) {
         this.force = this.force.add(f)
     }
     
-    update(dt) {
+    update(dt: number) {
         this.velocity = this.velocity.add(this.force.scale(dt / this.mass))
         this.force = new Vector()
         this.position = this.position.add(this.velocity.scale(dt))
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = this.color
         ctx.moveTo(this.position.x, this.position.y)
         ctx.beginPath()
@@ -30,7 +40,13 @@ class Mass {
 }
 
 class Spring { 
-    constructor(mass1, mass2, k, length) {
+    mass1: Mass
+    mass2: Mass
+    k: number
+    length: number
+    damping: number
+
+    constructor(mass1: Mass, mass2: Mass, k: number, length: number) {
         this.mass1 = mass1
         this.mass2 = mass2
         this.k = k
@@ -51,7 +67,7 @@ class Spring {
         this.mass2.applyForce(dirNorm.scale(-1*totalForce))
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D) {
         ctx.strokeStyle = "red"
         ctx.beginPath()
         ctx.moveTo(this.mass1.position.x, this.mass1.position.y)
@@ -61,8 +77,16 @@ class Spring {
 }
 
 class Body {
-    constructor(springs = [], masses = []) {
+    springs: Array<Spring>
+    masses: Array<Mass>
+    constructor(springs:Array<Spring> = [], masses: Array<Mass> = []) {
         this.springs = springs
         this.masses = masses
     }
+}
+
+export { 
+    Body,
+    Spring,
+    Mass
 }

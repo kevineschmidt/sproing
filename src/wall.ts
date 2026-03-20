@@ -1,5 +1,14 @@
-class Wall {
-    constructor(x1, x2, y1, y2) {
+import Vector from "./vector"
+import type { Mass } from './body'
+
+export default class Wall {
+    start: Vector
+    end: Vector
+    vector: Vector
+    length: number
+    normal: Vector
+
+    constructor(x1: number, x2: number, y1: number, y2: number) {
         this.start = new Vector(x1, y1)
         this.end = new Vector(x2, y2)
 
@@ -9,7 +18,7 @@ class Wall {
         this.normal = new Vector(-this.vector.y, this.vector.x)
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
 
         ctx.strokeStyle="white"
@@ -18,7 +27,7 @@ class Wall {
         ctx.stroke()
     }
 
-    intersect(ball) {
+    intersect(ball: Mass) {
         if (ball.position.x + ball.radius < this.start.x) return false
         if (ball.position.x - ball.radius > this.end.x)   return false
         
