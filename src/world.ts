@@ -42,8 +42,7 @@ export default class World {
         this.context.fillStyle = SPRING        
         
        this.objects.forEach((object) => {    
-            object.springs.forEach(spring => spring.draw(this.context))
-            object.masses.forEach(mass => mass.draw(this.context))
+            object.draw(this.context)
         })
     }
 

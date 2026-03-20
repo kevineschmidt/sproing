@@ -45,6 +45,7 @@ class Spring {
     k: number
     length: number
     damping: number
+    perimeter: boolean
 
     constructor(mass1: Mass, mass2: Mass, k: number, length: number) {
         this.mass1 = mass1
@@ -52,6 +53,7 @@ class Spring {
         this.k = k
         this.damping = 20
         this.length = length
+        this.perimeter = false
     }
 
     applyForce() {
@@ -79,10 +81,34 @@ class Spring {
 class Body {
     springs: Array<Spring>
     masses: Array<Mass>
-    
+    drawSolid: boolean;
+
     constructor(springs:Array<Spring> = [], masses: Array<Mass> = []) {
         this.springs = springs
         this.masses = masses
+        this.drawSolid = true
+    }
+    
+    draw(ctx: CanvasRenderingContext2D) {
+        let perimeterSprings = this.springs.filter(s => s.perimeter)
+        if (this.drawSolid && perimeterSprings.length > 1) {
+            let spring = perimeterSprings.shift()
+            if (!spring) return
+            ctx.moveTo(spring.mass1.position.x, spring.mass1.position.y)
+
+            while (spring) {
+                ctx.lineTo(spring.mass2.position.x, spring.mass2.position.y)
+                spring = perimeterSprings.shift()
+            }
+
+            ctx.closePath()
+            ctx.fillStyle = 'blue'
+            ctx.fill()
+        }
+
+        this.masses.forEach((m) => m.draw(ctx))
+        perimeterSprings.forEach(s => s.draw(ctx))
+    
     }
 }
 

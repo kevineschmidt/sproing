@@ -62,8 +62,7 @@
       this.context.strokeStyle = SPRING;
       this.context.fillStyle = SPRING;
       this.objects.forEach((object) => {
-        object.springs.forEach((spring) => spring.draw(this.context));
-        object.masses.forEach((mass) => mass.draw(this.context));
+        object.draw(this.context);
       });
     }
     update(deltaT) {
@@ -173,12 +172,14 @@
     k;
     length;
     damping;
+    perimeter;
     constructor(mass1, mass2, k, length) {
       this.mass1 = mass1;
       this.mass2 = mass2;
       this.k = k;
       this.damping = 20;
       this.length = length;
+      this.perimeter = false;
     }
     applyForce() {
       let dir = this.mass2.position.sub(this.mass1.position);
@@ -201,11 +202,110 @@
   var Body = class {
     springs;
     masses;
+    drawSolid;
     constructor(springs = [], masses = []) {
       this.springs = springs;
       this.masses = masses;
+      this.drawSolid = true;
+    }
+    draw(ctx) {
+      let perimeterSprings = this.springs.filter((s) => s.perimeter);
+      if (this.drawSolid && perimeterSprings.length > 1) {
+        let spring = perimeterSprings.shift();
+        if (!spring) return;
+        ctx.moveTo(spring.mass1.position.x, spring.mass1.position.y);
+        while (spring) {
+          ctx.lineTo(spring.mass2.position.x, spring.mass2.position.y);
+          spring = perimeterSprings.shift();
+        }
+        ctx.closePath();
+        ctx.fillStyle = "blue";
+        ctx.fill();
+      }
+      this.masses.forEach((m) => m.draw(ctx));
+      perimeterSprings.forEach((s) => s.draw(ctx));
     }
   };
+
+  // src/draw-bodies.ts
+  var MASS_RADIUS = 5;
+  var MASS_COLOR = "red";
+  var newBody = new Body();
+  var lastMass = null;
+  var firstMass = null;
+  var undoStack = [];
+  function massAtPoint(pos) {
+    return newBody.masses.find((mass) => {
+      return pos.sub(mass.position).length() < MASS_RADIUS * 2;
+    }) ?? null;
+  }
+  function addNewSpring(m1, m2) {
+    const newSpring = new Spring(m1, m2, 5e3, m1.position.sub(m2.position).length());
+    newBody.springs.push(newSpring);
+    return newSpring;
+  }
+  function addNewMass(pos) {
+    const newMass = new Mass(MASS_RADIUS, pos.x, pos.y, MASS_COLOR);
+    newBody.masses.push(newMass);
+    return newMass;
+  }
+  function findSpring(m1, m2) {
+    return newBody.springs.find((spring) => {
+      return spring.mass1 === m1 && spring.mass2 === m2 || spring.mass1 === m2 && spring.mass2 === m1;
+    });
+  }
+  function joinAllMasses() {
+    newBody.masses.forEach((m1) => {
+      newBody.masses.forEach((m2) => {
+        if (m1 === m2) return;
+        if (findSpring(m1, m2)) return;
+        addNewSpring(m1, m2);
+      });
+    });
+  }
+  function addBodyDrawing(world2, canvas2) {
+    world2.objects.push(newBody);
+    document.onkeydown = (event) => {
+      if (event.key === "z" && event.metaKey) {
+        const undo = undoStack.pop();
+        if (undo) {
+          undo();
+          world2.draw();
+        }
+        event.preventDefault();
+      }
+    };
+    canvas2.onmousedown = (event) => {
+      const start = new vector_default(event.offsetX, event.offsetY);
+      lastMass = massAtPoint(start);
+      if (!lastMass) {
+        lastMass = addNewMass(start);
+      }
+      firstMass = lastMass;
+    };
+    canvas2.onmouseup = (event) => {
+      if (!firstMass || !lastMass) return;
+      const pos = new vector_default(event.offsetX, event.offsetY);
+      addNewSpring(firstMass, lastMass).perimeter = true;
+      firstMass = null;
+      lastMass = null;
+      joinAllMasses();
+      newBody = new Body();
+      world2.objects.push(newBody);
+      world2.draw();
+    };
+    canvas2.onmousemove = (event) => {
+      if (!lastMass) return;
+      const pos = new vector_default(event.offsetX, event.offsetY);
+      const thisDrag = pos.sub(lastMass.position).length() > 10;
+      if (thisDrag) {
+        const newMass = addNewMass(pos);
+        addNewSpring(lastMass, newMass).perimeter = true;
+        lastMass = newMass;
+        world2.draw();
+      }
+    };
+  }
 
   // src/index.ts
   var canvas = document.querySelector("canvas");
@@ -219,54 +319,7 @@
     new Wall(canvas.width / 2, canvas.width, 200, 75),
     new Wall(300, 500, 430, 350)
   ];
-  var newBody = new Body();
-  var activeMass = null;
-  world.objects.push(newBody);
-  var MASS_RADIUS = 5;
-  var MASS_COLOR = "red";
-  var SELECTED_MASS_COLOR = "blue";
-  var undoStack = [];
-  document.onkeydown = (event) => {
-    if (event.key === "z" && event.metaKey) {
-      if (undoStack.length) {
-        const undo = undoStack.pop();
-        if (undo) {
-          undo();
-          world.draw();
-        }
-      }
-      event.preventDefault();
-    }
-  };
-  canvas.onclick = (event) => {
-    const center = new vector_default(event.offsetX, event.offsetY);
-    const clickedMass = newBody.masses.find((mass) => {
-      return center.sub(mass.position).length() < MASS_RADIUS * 2;
-    });
-    if (clickedMass && clickedMass !== activeMass) {
-      if (!activeMass) {
-        activeMass = clickedMass;
-        activeMass.color = SELECTED_MASS_COLOR;
-      } else {
-        const dist = activeMass.position.sub(clickedMass.position).length();
-        const spring = new Spring(activeMass, clickedMass, 4e3, dist);
-        newBody.springs.push(spring);
-        undoStack.push(() => {
-          newBody.springs = newBody.springs.filter((s) => s !== spring);
-        });
-        activeMass.color = "red";
-        activeMass = null;
-      }
-    } else {
-      if (activeMass) activeMass.color = MASS_COLOR;
-      const newMass = new Mass(MASS_RADIUS, center.x, center.y, MASS_COLOR);
-      undoStack.push(() => {
-        newBody.masses = newBody.masses.filter((m) => m !== newMass);
-      });
-      newBody.masses.push(newMass);
-    }
-    world.draw();
-  };
+  addBodyDrawing(world, canvas);
   button.onclick = () => {
     if (world.animating) world.stop();
     else world.animate();
