@@ -24,6 +24,21 @@ const MASS_RADIUS=5
 const MASS_COLOR="red"
 const SELECTED_MASS_COLOR="blue"
 
+const undoStack: Array<() => void> = []
+
+document.onkeydown = (event) => {
+    if (event.key === 'z' && event.metaKey) {
+        if (undoStack.length) {
+            const undo = undoStack.pop()
+            if (undo) {
+                undo()
+                world.draw()
+            }
+        }
+        event.preventDefault()
+    }
+}
+
 canvas.onclick = (event) => {
     const center = new Vector(event.offsetX, event.offsetY)
 
@@ -39,12 +54,21 @@ canvas.onclick = (event) => {
             const dist = activeMass.position.sub(clickedMass.position).length()
             const spring = new Spring(activeMass, clickedMass, 4000, dist)
             newBody.springs.push(spring)
+            undoStack.push(() => {
+                newBody.springs = newBody.springs.filter(s => s !== spring)
+            })
             activeMass.color = "red"
             activeMass = null
         }
     } else {
         if (activeMass) activeMass.color = MASS_COLOR
-        newBody.masses.push(new Mass(MASS_RADIUS, center.x, center.y, MASS_COLOR))
+        const newMass = new Mass(MASS_RADIUS, center.x, center.y, MASS_COLOR)
+
+        undoStack.push(() => {
+            newBody.masses = newBody.masses.filter(m => m !== newMass)
+        })
+
+        newBody.masses.push(newMass)
     }
 
     world.draw()

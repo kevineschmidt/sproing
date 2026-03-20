@@ -79,6 +79,7 @@ class Spring {
 class Body {
     springs: Array<Spring>
     masses: Array<Mass>
+    
     constructor(springs:Array<Spring> = [], masses: Array<Mass> = []) {
         this.springs = springs
         this.masses = masses
