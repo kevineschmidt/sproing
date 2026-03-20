@@ -94,6 +94,8 @@ class Body {
         if (this.drawSolid && perimeterSprings.length > 1) {
             let spring = perimeterSprings.shift()
             if (!spring) return
+
+            ctx.beginPath()
             ctx.moveTo(spring.mass1.position.x, spring.mass1.position.y)
 
             while (spring) {
