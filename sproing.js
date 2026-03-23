@@ -114,8 +114,16 @@
       ctx.stroke();
     }
     intersect(ball) {
-      if (ball.position.x + ball.radius < this.start.x) return false;
-      if (ball.position.x - ball.radius > this.end.x) return false;
+      let leftX, rightX;
+      if (this.start.x < this.end.x) {
+        leftX = this.start.x;
+        rightX = this.end.x;
+      } else {
+        leftX = this.end.x;
+        rightX = this.start.x;
+      }
+      if (ball.position.x + ball.radius < leftX) return false;
+      if (ball.position.x - ball.radius > rightX) return false;
       const v = ball.position.sub(this.start);
       const hdot = v.dot(this.normal);
       const ldot = v.dot(this.vector);
@@ -285,6 +293,8 @@
       const start = new vector_default(event.offsetX, event.offsetY);
       lastPos = start;
       if (currentMode === "body") {
+        newBody = new Body();
+        world2.objects.push(newBody);
         lastMass = massAtPoint(start);
         if (!lastMass) {
           lastMass = addNewMass(start);
@@ -299,8 +309,6 @@
         firstMass = null;
         lastMass = null;
         joinAllMasses();
-        newBody = new Body();
-        world2.objects.push(newBody);
         undoStack.push(() => {
           world2.objects = world2.objects.filter((b) => b !== newBody);
         });
@@ -323,7 +331,12 @@
           world2.draw();
         }
       } else if (currentMode === "wall") {
-        world2.walls.push(new Wall(lastPos.x, pos.x, lastPos.y, pos.y));
+        const newWall = new Wall(lastPos.x, pos.x, lastPos.y, pos.y);
+        world2.walls.push(newWall);
+        undoStack.push(() => {
+          world2.walls = world2.walls.filter((w) => w !== newWall);
+          world2.draw();
+        });
         lastPos = pos;
         world2.draw();
       }
@@ -348,10 +361,7 @@
   world.walls = [
     new Wall(0, 0, 0, canvas.height),
     new Wall(canvas.width, canvas.width, canvas.height, 0),
-    new Wall(0, canvas.width, canvas.height, canvas.height),
-    new Wall(0, canvas.width / 2, canvas.height * 0.5, canvas.height * 4 / 5),
-    new Wall(canvas.width / 2, canvas.width, 200, 75),
-    new Wall(300, 500, 430, 350)
+    new Wall(0, canvas.width, canvas.height, canvas.height)
   ];
   button.onclick = () => {
     if (world.animating) world.stop();

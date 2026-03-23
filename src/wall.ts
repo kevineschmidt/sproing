@@ -28,8 +28,18 @@ export default class Wall {
     }
 
     intersect(ball: Mass) {
-        if (ball.position.x + ball.radius < this.start.x) return false
-        if (ball.position.x - ball.radius > this.end.x)   return false
+        let leftX, rightX
+        if (this.start.x < this.end.x) {
+            leftX = this.start.x
+            rightX = this.end.x
+        } else {        
+            leftX = this.end.x
+            rightX = this.start.x
+        }
+
+
+        if (ball.position.x + ball.radius < leftX) return false
+        if (ball.position.x - ball.radius > rightX)   return false
         
         const v = ball.position.sub(this.start)
         // Height from line

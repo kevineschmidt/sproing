@@ -79,6 +79,9 @@ export function addDrawMode(world: World, canvas: HTMLCanvasElement) {
         const start = new Vector(event.offsetX, event.offsetY)
         lastPos = start
         if (currentMode === 'body') {
+            // Get the next one ready
+            newBody = new Body()
+            world.objects.push(newBody)
             lastMass = massAtPoint(start)
             if (!lastMass) {
                 lastMass = addNewMass(start)
@@ -96,9 +99,6 @@ export function addDrawMode(world: World, canvas: HTMLCanvasElement) {
             lastMass = null
             joinAllMasses()
 
-            // Get the next one ready
-            newBody = new Body()
-            world.objects.push(newBody)
             undoStack.push(() => {
                 world.objects = world.objects.filter(b => b !== newBody)
             })
@@ -124,7 +124,13 @@ export function addDrawMode(world: World, canvas: HTMLCanvasElement) {
                 world.draw()
             }
         } else if (currentMode === 'wall') {
-            world.walls.push(new Wall(lastPos.x, pos.x, lastPos.y, pos.y))
+            const newWall = new Wall(lastPos.x, pos.x, lastPos.y, pos.y)
+            world.walls.push(newWall)
+            undoStack.push(() => {
+                world.walls = world.walls.filter(w => w !== newWall)
+                world.draw()
+            })
+            
             lastPos = pos
             world.draw()
         }
